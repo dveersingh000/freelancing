@@ -11,10 +11,23 @@ const userSchema = new Schema({
         required: true,
         unique: true
     },
+    mobile: {
+        type: String,
+        required: true,
+        unique: true
+    },
     password: {
         type: String,   
         required: true
-    },creationDate: {
+    },
+    otp: {
+        String,
+    },
+    isRegistered: {
+        type: Boolean,
+        default: false
+    },  
+    creationDate: {
         type: Date,
         default: Date.now
     }
