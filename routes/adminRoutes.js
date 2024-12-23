@@ -1,10 +1,28 @@
 const express = require('express');
-const { getRegisteredUsers, getJobPostingStats } = require('../controllers/adminController.js');
+const {
+  getDashboardOverview,
+  getJobPostingStats,
+  getRevenueStats,
+  getPostedJobsList,
+  getApplicationDetails,
+  getNewApplications,
+  getPendingPayments,
+  getVerificationStatus,
+  getNoShowCount,
+  getRegisteredUsers,
+} = require('../controllers/adminController');
+
 const router = express.Router();
 
-router.get('/users/registered', getRegisteredUsers);
+router.get('/dashboard/overview', getDashboardOverview);
 router.get('/jobs/posted-stats', getJobPostingStats);
-
-// More admin routes as needed
+router.get('/revenue/stats', getRevenueStats);
+router.get('/jobs/list', getPostedJobsList);
+router.get('/applications/details', getApplicationDetails);
+router.get('/applications/new', getNewApplications);
+router.get('/payments/pending', getPendingPayments);
+router.get('/verification/status', getVerificationStatus);
+router.get('/attendance/no-show', getNoShowCount);
+router.get('/users/registered', getRegisteredUsers);
 
 module.exports = router;

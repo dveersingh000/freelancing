@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/user.schema.js");
+const User = require("../models/userModel");
 const dotenv = require("dotenv");
 // const crypto = require("crypto");
 // const sendSms = require("../utils/sendSms"); 

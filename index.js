@@ -10,6 +10,8 @@ const jobRoutes = require('./routes/jobRoutes');
 const shiftRoutes = require('./routes/shiftRoutes');
 const homeRoutes = require('./routes/homeRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+// const employerRoutes = require('./routes/employerRoutes');
 const cors = require("cors");
 
 const app = express();
@@ -22,6 +24,8 @@ app.use("/api/job", jobRoutes);
 app.use("/api/shift", shiftRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
+// app.use('/api/employer', employerRoutes);
 app.use(cors());
 
 
