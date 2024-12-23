@@ -15,7 +15,7 @@ exports.generateOtp = async (req, res) => {
         }
 
         user.otp = hashedOtp;
-        user.otpExpiry = Date.now() + 60 * 1000; // 60 seconds
+        user.otpExpiry = Date.now() + 60 * 1000; 
         await user.save();
 
         await sendSms(phoneNumber, `Your OTP is ${otp}`);
@@ -53,7 +53,6 @@ exports.registerUser = async (req, res) => {
     const { fullName, phoneNumber, email, workPassStatus } = req.body;
 
     try {
-        // Check if the user already exists
         let user = await User.findOne({ phoneNumber });
         if (user) {
             // If the user exists but is unverified, resend OTP
@@ -119,4 +118,18 @@ exports.resendOtp = async (req, res) => {
     }
 };
 
-// exports.login = async (req, res) => { const { country_code, mobile_number, otp } = req.body; try { const isValid = verifyOtp(country_code, mobile_number, otp); if (isValid) { const user = await User.findOne({ country_code, mobile_number }); const token = generateToken(user._id); res.status(200).json({ message: 'Login successful', token }); } else { res.status(401).json({ error: 'Invalid OTP' }); } } catch (error) { res.status(500).json({ error: 'Server Error' }); } };
+// exports.login = async (req, res) => { 
+//     const { country_code, mobile_number, otp } = req.body; 
+//     try { 
+//         const isValid = verifyOtp(country_code, mobile_number, otp); 
+//         if (isValid) { 
+//             const user = await User.findOne({ country_code, mobile_number }); 
+//             const token = generateToken(user._id); 
+//             res.status(200).json({ message: 'Login successful', token }); 
+//         } else { 
+//             res.status(401).json({ error: 'Invalid OTP' }); 
+//         } 
+//     } catch (error) { 
+//         res.status(500).json({ error: 'Server Error' }); 
+//     } 
+// };
