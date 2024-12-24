@@ -1,25 +1,18 @@
+// routes/jobRoutes.js
 const express = require('express');
 const {
-  searchJobs,
+  getOngoingJobs,
+  getCompletedJobs,
+  getCancelledJobs,
   getJobDetails,
-  applyForJob,
-  getEmployerDetails,
-  getAvailableShifts,
-  getJobRequirements,
-  getJobScope,
-  getJobTiming,
+  cancelJob
 } = require('../controllers/jobController');
-
 const router = express.Router();
 
-// Define all routes
-router.get('/search', searchJobs);
+router.get('/ongoing', getOngoingJobs);
+router.get('/completed', getCompletedJobs);
+router.get('/cancelled', getCancelledJobs);
 router.get('/details', getJobDetails);
-router.post('/apply', applyForJob);
-router.get('/employer/details', getEmployerDetails);
-router.get('/shifts/available', getAvailableShifts);
-router.get('/requirements', getJobRequirements);
-router.get('/scope', getJobScope);
-router.get('/timing', getJobTiming);
+router.post('/cancel', cancelJob);
 
 module.exports = router;
