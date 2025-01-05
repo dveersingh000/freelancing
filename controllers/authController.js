@@ -64,7 +64,10 @@ exports.generateOtp = async (req, res) => {
     // Send OTP to user (e.g., SMS or Email)
     console.log(`OTP for ${phoneNumber}: ${otp}`);
 
-    res.status(200).json({ message: 'OTP sent successfully.' });
+    res.status(200).json({ 
+      message: 'OTP sent successfully.',
+      otp: otp  // Include OTP in the response
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
@@ -142,7 +145,10 @@ exports.resendOtp = async (req, res) => {
     // Send OTP to user (e.g., SMS or Email)
     console.log(`New OTP for ${phoneNumber}: ${otp}`);
 
-    res.status(200).json({ message: 'OTP resent successfully.' });
+    res.status(200).json({ 
+      message: 'OTP sent successfully.',
+      otp: otp  // Include OTP in the response
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
