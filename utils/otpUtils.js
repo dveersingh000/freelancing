@@ -1,16 +1,10 @@
-const crypto = require('crypto');
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-let otpStore = {}; // Store OTPs temporarily for simplicity
-
-exports.generateOTP = () => {
-  return crypto.randomInt(100000, 999999).toString();
+const verifyOTP = (inputOTP, storedOTP, expiry) => {
+  if (storedOTP === inputOTP && new Date() < expiry) {
+    return true;
+  }
+  return false;
 };
 
-exports.sendOTP = async (phoneNumber, otp) => {
-  otpStore[phoneNumber] = otp; // Store OTP
-  console.log(`Sending OTP ${otp} to phone number ${phoneNumber}`);
-};
-
-exports.verifyOTP = (phoneNumber, otp) => {
-  return otpStore[phoneNumber] === otp; // Verify OTP
-};
+module.exports = { generateOTP, verifyOTP };
