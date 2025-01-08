@@ -73,9 +73,9 @@ exports.resendOtp = async (req, res) => {
 
   try {
     const user = await User.findOne({ phoneNumber });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
+    // if (!user) {
+    //   return res.status(404).json({ message: 'User not found.' });
+    // }
 
     // Send OTP using Twilio
     const otpStatus = await sendOTP(phoneNumber);
