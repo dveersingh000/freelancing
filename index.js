@@ -22,14 +22,14 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRoutes);
-app.use("/api/job", jobRoutes);
-app.use("/api/shift", shiftRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/shifts", shiftRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ewallet', ewalletRoutes);
-app.use('/api/employer', employerRoutes);
+app.use('/api/employers', employerRoutes);
 app.use(cors());
 
 

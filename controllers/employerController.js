@@ -1,6 +1,16 @@
 // controllers/employerController.js
 const Employer = require('../models/Employer');
 
+
+exports.getEmployers = async (req, res) => {
+  try {
+    const employers = await Employer.find();
+    res.status(200).json(employers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Get Employer by ID
 exports.getEmployerById = async (req, res) => {
   try {
