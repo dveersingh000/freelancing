@@ -3,7 +3,6 @@ const { createJob, getJobs, updateJob, getFilters, getDashboardMetrics, viewJob,
 
 const router = express.Router();
 
-// Job Routes
 router.post('/', createJob);
 router.get('/', getJobs);
 router.put('/:jobId', updateJob);

@@ -153,8 +153,44 @@ exports.viewJob = async (req, res) => {
 exports.modifyJob = async (req, res) => {
   try {
     const { jobId } = req.params;
-    const updatedJob = await Job.findByIdAndUpdate(jobId, req.body, { new: true });
-    if (!updatedJob) return res.status(404).json({ error: 'Job not found' });
+    const { shifts, ...jobData } = req.body;
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    // Update job fields
+    Object.assign(job, jobData);
+
+    // Process shifts
+    if (shifts && Array.isArray(shifts)) {
+      const existingShiftIds = shifts.filter((shift) => shift._id).map((shift) => shift._id);
+
+      // Remove deleted shifts
+      await Shift.deleteMany({ _id: { $nin: existingShiftIds }, job: jobId });
+
+      // Add or update shifts
+      for (const shiftData of shifts) {
+        if (shiftData._id) {
+          // Update existing shift
+          await Shift.findByIdAndUpdate(shiftData._id, shiftData);
+        } else {
+          // Add new shift
+          const newShift = new Shift({ ...shiftData, job: jobId });
+          await newShift.save();
+          job.shifts.push(newShift._id);
+        }
+      }
+
+      // Remove any unassociated shift references from the job
+      job.shifts = existingShiftIds.concat(
+        shifts.filter((shift) => !shift._id).map((shift) => shift._id)
+      );
+    }
+
+    // Save the job
+    const updatedJob = await job.save();
 
     res.status(200).json(updatedJob);
   } catch (err) {

@@ -9,7 +9,7 @@ const authRoutes = require("./routes/authRoutes");
 const jobRoutes = require('./routes/jobRoutes'); 
 const shiftRoutes = require('./routes/shiftRoutes');
 const homeRoutes = require('./routes/homeRoutes');
-const profileRoutes = require('./routes/profileRoutes');
+const candidateRoutes = require('./routes/candidateRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const ewalletRoutes = require('./routes/ewalletRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
@@ -18,6 +18,8 @@ const scanQRCode = require('./routes/qrRoutes');
 const requirementRoutes = require('./routes/requirementRoutes');
 const penaltyRoutes = require('./routes/penaltyRoutes');
 const outletRoutes = require('./routes/outletRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const withdrawalRoutes = require('./routes/withdrawalRoutes');
 const cors = require("cors");
 
 const app = express();
@@ -30,7 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/shifts", shiftRoutes);
 app.use('/api/home', homeRoutes);
-app.use('/api/profile', profileRoutes);
+app.use('/api/candidates', candidateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ewallet', ewalletRoutes);
@@ -39,6 +41,8 @@ app.use('/api/scan', scanQRCode);
 app.use('/api/requirements', requirementRoutes);
 app.use('/api/penalties', penaltyRoutes);
 app.use('/api/outlets', outletRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/withdrawals', withdrawalRoutes);
 app.use(cors());
 
 

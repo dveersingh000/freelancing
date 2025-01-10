@@ -1,4 +1,3 @@
-// controllers/notificationController.js
 const Notification = require('../models/Notification');
 
 // Fetch all notifications for a user

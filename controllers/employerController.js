@@ -67,7 +67,7 @@ exports.deleteEmployer = async (req, res) => {
 exports.getEmployerJobs = async (req, res) => {
   try {
     const { id } = req.params;
-    const jobs = await Job.find({ company: id }); // Assuming `company` is the identifier
+    const jobs = await Job.find({ company: id });
     res.status(200).json(jobs);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching employer jobs' });

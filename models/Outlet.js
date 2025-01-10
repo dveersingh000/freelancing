@@ -6,8 +6,8 @@ const outletSchema = new mongoose.Schema({
   employer: { type: mongoose.Schema.Types.ObjectId, ref: 'Employer', required: true },
   contact: { type: String },
   operatingHours: { type: String },
-  workerFeedback: { type: Number, default: 0 }, // Average rating out of 5
-  activeJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }], // Reference to Jobs
+  workerFeedback: { type: Number, default: 0 }, 
+  activeJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('Outlet', outletSchema);
