@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const candidateSchema = new mongoose.Schema(
+const workerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     avatarUrl: { type: String, default: '' },
@@ -18,6 +18,8 @@ const candidateSchema = new mongoose.Schema(
       enum: ['Verified', 'Approved', 'Pending', 'Rejected', 'Incomplete Profile'],
       default: 'Pending',
     },
+    verificationStatus: { type: String, enum: ['Pending', 'Verified'], default: 'Pending' },
+    activatedDate: { type: Date },
     eWalletAmount: { type: Number, default: 0 },
     postalCode: { type: String },
     city: { type: String },
@@ -38,4 +40,4 @@ const candidateSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Candidate', candidateSchema);
+module.exports = mongoose.model('Worker', workerSchema);

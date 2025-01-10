@@ -5,6 +5,7 @@ const jobSchema = new mongoose.Schema({
   company: { type: String, required: false },
   employer: { type: mongoose.Schema.Types.ObjectId, ref: 'Employer' },
   outlet: { type: mongoose.Schema.Types.ObjectId, ref: 'Outlet' },
+  applicants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Application' }],
   location: { type: String, required: false },
   industry: { type: String, required: false },
   date: { type: Date, required: false },

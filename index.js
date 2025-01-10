@@ -9,7 +9,7 @@ const authRoutes = require("./routes/authRoutes");
 const jobRoutes = require('./routes/jobRoutes'); 
 const shiftRoutes = require('./routes/shiftRoutes');
 const homeRoutes = require('./routes/homeRoutes');
-const candidateRoutes = require('./routes/candidateRoutes');
+const workerRoutes = require('./routes/workerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const ewalletRoutes = require('./routes/ewalletRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
@@ -20,6 +20,7 @@ const penaltyRoutes = require('./routes/penaltyRoutes');
 const outletRoutes = require('./routes/outletRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const withdrawalRoutes = require('./routes/withdrawalRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const cors = require("cors");
 
 const app = express();
@@ -32,7 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/shifts", shiftRoutes);
 app.use('/api/home', homeRoutes);
-app.use('/api/candidates', candidateRoutes);
+app.use('/api/workers', workerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ewallet', ewalletRoutes);
@@ -43,6 +44,7 @@ app.use('/api/penalties', penaltyRoutes);
 app.use('/api/outlets', outletRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use(cors());
 
 
