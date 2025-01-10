@@ -3,38 +3,64 @@ const Shift = require('../models/Shift');
 
 exports.createJob = async (req, res) => {
   try {
-    const job = new Job(req.body);
+    const { jobName, company, outlet, location, industry, date, jobDescription, jobRequirements, status, shifts } = req.body;
+
+    // Create the job
+    const job = new Job({
+      jobName,
+      company,
+      outlet,
+      location,
+      industry,
+      date,
+      jobDescription,
+      jobRequirements,
+      status,
+    });
+
     const savedJob = await job.save();
+
+    // If shifts are provided, create and associate them
+    if (shifts && shifts.length > 0) {
+      for (const shiftData of shifts) {
+        const shift = new Shift({ ...shiftData, job: savedJob._id });
+        await shift.save();
+        savedJob.shifts.push(shift._id);
+      }
+      await savedJob.save();
+    }
+
     res.status(201).json(savedJob);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to create job" });
+    res.status(500).json({ error: 'Failed to create job', details: err.message });
   }
 };
 
 // Fetch jobs with pagination, search, and filters
 exports.getJobs = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, status, city, shiftsMin, shiftsMax } = req.query;
+    const { page = 1, limit = 10, search, status, location, shiftsMin, shiftsMax } = req.query;
     
     const filters = {};
     if (search) filters.jobName = { $regex: search, $options: 'i' };
     if (status) filters.status = status;
-    if (city) filters.location = { $regex: city, $options: 'i' };
+    if (location) filters.location = { $regex: location, $options: 'i' };
     
 
     const jobs = await Job.find(filters)
-      .populate({
-        path: 'shifts',
-        match: {
-          $expr: {
-            $and: [
-              { $gte: [{ $size: "$shifts" }, Number(shiftsMin || 0)] },
-              { $lte: [{ $size: "$shifts" }, Number(shiftsMax || Infinity)] },
-            ],
-          },
-        },
-      })
+      .populate('shifts')
+      // .populate({
+      //   path: 'shifts',
+      //   match: {
+      //     $expr: {
+      //       $and: [
+      //         { $gte: [{ $size: "$shifts" }, Number(shiftsMin || 0)] },
+      //         { $lte: [{ $size: "$shifts" }, Number(shiftsMax || Infinity)] },
+      //       ],
+      //     },
+      //   },
+      // })
       .skip((page - 1) * limit)
       .limit(Number(limit));
 

@@ -11,19 +11,23 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  type: {
+  timeAgo: {
     type: String,
-    enum: ['info', 'success', 'warning', 'error'], // Example types, modify as needed
-    default: 'info'
+    required: true
   },
-  isRead: {
-    type: Boolean,
-    default: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  // type: {
+  //   type: String,
+  //   enum: ['info', 'success', 'warning', 'error'], // Example types, modify as needed
+  //   default: 'info'
+  // },
+  // isRead: {
+  //   type: Boolean,
+  //   default: false
+  // },
+  // createdAt: {
+  //   type: Date,
+  //   default: Date.now
+  // }
 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

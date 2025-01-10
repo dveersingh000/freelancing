@@ -1,9 +1,12 @@
 const express = require("express");
-const { addShiftToJob, getShiftsForJob } = require("../controllers/shiftController");
+const { createShift, getShift, getShiftById, updateShift, deleteShift } = require("../controllers/shiftController");
 const router = express.Router();
 
-router.post("/:jobId", addShiftToJob); // Add a shift to a specific job
-router.get("/:jobId", getShiftsForJob); // Get all shifts for a specific job
+router.post("/", createShift); 
+router.get("/", getShift); 
+router.get("/:shiftId", getShiftById);
+router.put("/:shiftId", updateShift);
+router.delete("/:shiftId", deleteShift);
 
 module.exports = router;
 

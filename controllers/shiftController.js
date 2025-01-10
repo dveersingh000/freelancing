@@ -1,31 +1,41 @@
 const Job = require("../models/Job");
 const Shift = require("../models/Shift");
 
-exports.addShiftToJob = async (req, res) => {
+exports.createShift = async (req, res) => {
   try {
-    const { jobId } = req.params;
-    const shiftData = req.body;
+    const { jobId, ...shiftData } = req.body;
 
     const job = await Job.findById(jobId);
-    if (!job) {
-      return res.status(404).json({ error: "Job not found" });
-    }
+    if (!job) return res.status(404).json({ error: 'Job not found' });
 
     const shift = new Shift({ ...shiftData, job: jobId });
     const savedShift = await shift.save();
 
-    // Update the job document to include the shift
     job.shifts.push(savedShift._id);
     await job.save();
 
     res.status(201).json(savedShift);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to add shift" });
+    res.status(500).json({ error: 'Failed to create shift', details: err.message });
   }
 };
 
-exports.getShiftsForJob = async (req, res) => {
+exports.getShift = async (req, res) => {
+  try {
+    const shifts = await Shift.find();
+    if (!shifts.length) {
+      return res.status(404).json({ error: "No shifts found for this job" });
+    }
+
+    res.status(200).json(shifts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch shifts" });
+  }
+};
+
+exports.getShiftById = async (req, res) => {
   try {
     const { jobId } = req.params;
 
@@ -41,7 +51,27 @@ exports.getShiftsForJob = async (req, res) => {
   }
 };
 
+// Update an existing shift
+exports.updateShift = async (req, res) => {
+  try {
+    const updatedShift = await Shift.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedShift) return res.status(404).json({ message: 'Shift not found' });
+    res.status(200).json(updatedShift);
+  } catch (err) {
+    res.status(400).json({ message: 'Error updating shift' });
+  }
+};
 
+// Delete a specific shift
+exports.deleteShift = async (req, res) => {
+  try {
+    const deletedShift = await Shift.findByIdAndDelete(req.params.id);
+    if (!deletedShift) return res.status(404).json({ message: 'Shift not found' });
+    res.status(200).json({ message: 'Shift deleted successfully' });
+  } catch (err) {
+    res.status(400).json({ message: 'Error deleting shift' });
+  }
+};
 
 
 

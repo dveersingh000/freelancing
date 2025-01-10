@@ -27,7 +27,16 @@ exports.login = async (req, res) => {
     res.status(200).json({
       message: 'Login successful',
       token,
-      user,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        email: user.email,
+        employmentStatus: user.employmentStatus,
+        profilePicture: user.profilePicture,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -40,19 +49,13 @@ exports.generateOtp = async (req, res) => {
   const { phoneNumber, fullName, email, employmentStatus } = req.body;
 
   try {
-    let user = await User.findOne({ phoneNumber });
-
-    if (!user) {
-      // Validate fields for new users
-      // if (!phoneNumber || !fullName || !email || !employmentStatus) {
-      //   return res.status(400).json({
-      //     message: 'User not registered. Full name, email, employment status, and phone number are required.',
-      //   });
-      // }
-
-      // Create new user if not exists
-      user = new User({ phoneNumber, fullName, email, employmentStatus });
+    if (!phoneNumber) {
+      return res.status(400).json({ message: 'Phone number is required.' });
     }
+    const user = await User.findOne({ phoneNumber });
+
+    // Flag to indicate whether the user is registered
+    const isRegistered = !!user;
 
     // Send OTP using Twilio
     const otpStatus = await sendOTP(phoneNumber);
@@ -60,7 +63,10 @@ exports.generateOtp = async (req, res) => {
       return res.status(500).json({ message: 'Failed to send OTP. Try again later.' });
     }
 
-    res.status(200).json({ message: 'OTP sent successfully.' });
+    res.status(200).json({ 
+      message: 'OTP sent successfully.',
+      isRegistered, 
+    });
   } catch (error) {
     console.error('Error generating OTP:', error);
     res.status(500).json({ message: 'Server error', error });
@@ -96,6 +102,12 @@ exports.registerUser = async (req, res) => {
   // console.log(req.body);
 
   try {
+    // Validate required fields
+    if (!fullName || !phoneNumber || !email || !employmentStatus || !otp) {
+      return res.status(400).json({
+        message: 'All fields are required.',
+      });
+    }
     const ifUserExists = await User.findOne({ phoneNumber });
     if (ifUserExists) {
       return res.status(400).json({ message: "User already exists" });

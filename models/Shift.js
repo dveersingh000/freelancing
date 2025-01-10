@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 
 const shiftSchema = new mongoose.Schema({
-  job: { type: mongoose.Schema.Types.ObjectId, ref: "Job", required: true },
-  startTime: { type: String, required: false },
-  endTime: { type: String, required: false },
-  vacancy: { type: Number, required: false },
-  standbyVacancy: { type: Number },
+  jobId: { type: mongoose.Schema.Types.ObjectId, ref: "Job", required: true },
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  vacancy: { type: Number, default: 0 },
+  standbyVacancy: { type: Number, default: 0 },
   duration: { type: Number, required: false },
-  breakHours: { type: Number },
-  breakType: { type: String, enum: ['Paid', 'Unpaid'], required: false },
+  breakHours: { type: Number, default: 0 },
+  breakType: { type: String, enum: ['Paid', 'Unpaid'], default: 'Unpaid' },
   rateType: { type: String, enum: ['Flat rate', 'Hourly'], required: false },
   payRate: { type: Number, required: false },
   totalWage: { type: Number, required: false },
