@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'http://localhost:3000/static/images/image.png', // Use your hosted URL
     },
+    // role: { type: String, enum: ["admin", "user"], default: "user" },
   },
   { timestamps: true }
 );
