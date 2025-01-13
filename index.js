@@ -47,6 +47,14 @@ app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use(cors());
 
+app.use(cors({
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+}));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
