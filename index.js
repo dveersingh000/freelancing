@@ -1,9 +1,11 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const cookieParser = require("cookie-parser")
 dotenv.config();
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const PORT = process.env.PORT || 3000;
+const cors = require("cors");
+
 const userRouter = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 const jobRoutes = require('./routes/jobRoutes'); 
@@ -14,6 +16,20 @@ const adminRoutes = require('./routes/adminRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const employerRoutes = require('./routes/employerRoutes');
+
+
+const app = express();
+
+// CORS Middleware - Applied globally before other routes
+app.use(cors({
+  origin: "http://localhost:5173",  // Allow frontend URL
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,  // Allow cookies with requests
+}));
+
+app.use(express.json())
+app.use(cookieParser())
+
 const qrRoutes = require('./routes/qrRoutes');
 const requirementRoutes = require('./routes/requirementRoutes');
 const penaltyRoutes = require('./routes/penaltyRoutes');
@@ -29,8 +45,11 @@ const cors = require("cors");
 const app = express();
 app.use('/static', express.static('public'));
 // app.use('/static', express.static(path.join(__dirname, 'public')));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Routes
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
@@ -39,6 +58,10 @@ app.use('/api/home', homeRoutes);
 app.use('/api/workers', workerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+app.use('/api/ewallet', ewalletRoutes);
+app.use('/api/employer', employerRoutes);
+=======
 app.use('/api/wallet', walletRoutes);
 app.use('/api/employers', employerRoutes);
 app.use('/api/qr', qrRoutes);
@@ -62,14 +85,17 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  mongoose
-    .connect(process.env.MONGOOSE_URI_STRING, {})
-    .then(() => {
-      console.log("MongoDB connected");
-    })
-    .catch((err) => {
-      console.log(err);
+
+// MongoDB connection
+mongoose
+  .connect(process.env.MONGOOSE_URI_STRING, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("MongoDB connected");
+    // Start the server after successful DB connection
+    app.listen(process.env.PORT || 3000, () => {
+      console.log(`Server is running on port ${process.env.PORT || 3000}`);
     });
-});
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+  });

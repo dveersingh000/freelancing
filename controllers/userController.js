@@ -3,11 +3,19 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const dotenv = require("dotenv");
 
+const { createToken, setCookie } = require("../utils/auth");
+// const crypto = require("crypto");
+// const sendSms = require("../utils/sendSms"); 
+
+
 dotenv.config();
+
+const ADMIN_EMAIL = 'admin@example.com';
+const ADMIN_PASSWORD = 'adminpassword';
 
 // Register a new user
 exports.registerUser = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password , phoneNumber} = req.body;
     try {
         const ifUserExists = await User.findOne({ email });
         if (ifUserExists) {
@@ -17,7 +25,8 @@ exports.registerUser = async (req, res) => {
         const user = new User({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            phoneNumber
         });
         await user.save();
         res.status(201).json({ message: "User created successfully" });
@@ -52,22 +61,31 @@ exports.getUserByEmail = async (req, res) => {
 
 // Login user
 exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
     try {
+        const { email, password } = req.body;
+    
+        // Admin login
+        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+          const token = createToken({ role: 'ADMIN' });
+          setCookie(res, token);
+          return res.json({ user: { email: ADMIN_EMAIL, fullName: 'Admin', role: 'ADMIN' } });
+        }
+    
+        // User login
         const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ message: "Wrong email or password" });
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+          return res.status(401).json({ error: 'Invalid credentials' });
         }
-        const isPasswordMatch = await bcrypt.compare(password, user.password);
-        if (!isPasswordMatch) {
-            return res.status(400).json({ message: "Wrong email or password" });
-        }
-        const payload = { id: user._id };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
-        res.status(200).json({ token });
-    } catch (error) {
-        res.status(500).json({ message: "Error logging in", error });
-    }
+    
+        user.lastLogin = new Date();
+        await user.save();
+    
+        const token = createToken({ _id: user._id, role: user.role });
+        setCookie(res, token);
+        res.json({ user: { email: user.email, fullName: user.fullName, role: user.role } });
+      } catch (error) {
+        res.status(400).json({ error: error.message });
+      }
 };
 
 // Update user
@@ -88,6 +106,16 @@ exports.updateUser = async (req, res) => {
         res.status(500).json({ message: "Error updating user", error });
     }
 };
+
+
+exports.authenticated = async (req, res) => {
+    res.json(req.user);
+  };
+// exports.generateOtp = async (req, res) => {
+//     const { mobile } = req.body;
+//     try {
+//         const otp = crypto.randomInt(100000, 999999).toString();
+//         const hashedOtp = await bcrypt.hash(otp, 10);
 
 
 
