@@ -21,17 +21,23 @@ exports.createShift = async (req, res) => {
   }
 };
 
-exports.getShift = async (req, res) => {
+exports.getShiftAvailability = async (req, res) => {
   try {
-    const shifts = await Shift.find();
-    if (!shifts.length) {
-      return res.status(404).json({ error: "No shifts found for this job" });
-    }
+    const { jobId, shift } = req.query;
 
-    res.status(200).json(shifts);
+    const shiftDetails = await Shift.findOne({
+      job: jobId,
+      time: shift,
+    });
+
+    if (!shiftDetails) return res.status(404).json({ error: 'Shift not found' });
+
+    res.status(200).json({
+      shift: shiftDetails.time,
+      availability: shiftDetails.availability,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch shifts" });
+    res.status(500).json({ error: err.message });
   }
 };
 

@@ -22,7 +22,7 @@ exports.scanQRCode = async (req, res) => {
     const userCoordinates = { latitude: userLatitude, longitude: userLongitude };
 
     const distance = haversine(jobCoordinates, userCoordinates);
-    const geofenceLimit = 100; // meters
+    const geofenceLimit = 1000; // meters
 
     if (distance > geofenceLimit) {
       return res.status(400).json({ message: 'You are outside the allowed area.' });

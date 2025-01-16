@@ -8,30 +8,48 @@ exports.getNotifications = async (req, res) => {
     const notifications = await Notification.find({ user: req.user.id })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .limit(Number(limit))
+      .select('type message read createdAt');
 
-    const total = await Notification.countDocuments({ user: req.user.id });
-
-    res.status(200).json({ notifications, total, totalPages: Math.ceil(total / limit), currentPage: page });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch notifications', details: error.message });
-  }
+      res.status(200).json({ notifications });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
 };
 
 // Mark notification as read
 exports.markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id; // User from auth middleware
 
-    const notification = await Notification.findByIdAndUpdate(id, { isRead: true }, { new: true });
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id, user: userId },
+      { read: true },
+      { new: true }
+    );
 
     if (!notification) return res.status(404).json({ error: 'Notification not found' });
 
-    res.status(200).json(notification);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to mark notification as read', details: error.message });
+    res.status(200).json({ message: 'Notification marked as read', notification });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
+
+//count unread notification
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const unreadCount = await Notification.countDocuments({ user: userId, read: false });
+
+    res.status(200).json({ unreadCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 // Delete notification
 exports.deleteNotification = async (req, res) => {

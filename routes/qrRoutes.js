@@ -5,6 +5,6 @@ const authMiddleware = require('../middlewares/auth');
 const router = express.Router();
 
 // Route to scan QR Code and clock in/out
-router.post('/', authMiddleware, scanQRCode);
+router.post('/', scanQRCode);
 
 module.exports = router;

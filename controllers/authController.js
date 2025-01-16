@@ -1,6 +1,23 @@
 const User = require('../models/User');
 const { verifyOTP, sendOTP } = require('../utils/otpUtils');
 const { generateToken } = require('../utils/jwtUtils');
+const Notification = require('../models/Notification');
+
+exports.getUserDynamicDetails = async (req, res) => {
+  try {
+    // const userId = req.user.id;
+    const userId = req.params.id;
+
+    // Fetch unread notifications count
+    const unreadNotifications = await Notification.countDocuments({ user: userId, read: false });
+
+    res.status(200).json({
+      unreadNotifications,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.login = async (req, res) => {
   const { phoneNumber, otp } = req.body;

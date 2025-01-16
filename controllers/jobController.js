@@ -1,5 +1,6 @@
 const Job = require('../models/Job');
 const Shift = require('../models/Shift');
+const  Application = require('../models/Application');
 
 exports.createJob = async (req, res) => {
   try {
@@ -9,7 +10,6 @@ exports.createJob = async (req, res) => {
     const job = new Job({
       jobName,
       company,
-      outlet,
       location,
       industry,
       date,
@@ -40,29 +40,30 @@ exports.createJob = async (req, res) => {
 // Fetch jobs with pagination, search, and filters
 exports.getJobs = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, status, location, shiftsMin, shiftsMax } = req.query;
+    const { search, status, location, page = 1, limit = 10 } = req.query;
     
     const filters = {};
-    if (search) filters.jobName = { $regex: search, $options: 'i' };
-    if (status) filters.status = status;
-    if (location) filters.location = { $regex: location, $options: 'i' };
-    
+    // Add search keyword filter (case-insensitive)
+    if (search) {
+      filters.jobName = { $regex: search, $options: "i" }; // Search in jobName
+    }
 
+    // Add status filter if provided
+    if (status) {
+      filters.status = status;
+    }
+
+    // Add location filter (case-insensitive)
+    if (location) {
+      filters.location = { $regex: location, $options: "i" };
+    }
+    
+    // Paginate results
     const jobs = await Job.find(filters)
       .populate('shifts')
-      // .populate({
-      //   path: 'shifts',
-      //   match: {
-      //     $expr: {
-      //       $and: [
-      //         { $gte: [{ $size: "$shifts" }, Number(shiftsMin || 0)] },
-      //         { $lte: [{ $size: "$shifts" }, Number(shiftsMax || Infinity)] },
-      //       ],
-      //     },
-      //   },
-      // })
       .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .limit(Number(limit))
+      // .select('jobName description location dates shifts wages hourlyRate breakTime requirements');
 
     const totalJobs = await Job.countDocuments(filters);
 
@@ -70,11 +71,172 @@ exports.getJobs = async (req, res) => {
       jobs,
       totalPages: Math.ceil(totalJobs / limit),
       currentPage: page,
+      totalJobs,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//get jobs by id
+exports.getJobById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const job = await Job.findById(id)
+      .populate('shifts')
+      .populate('applicants')
+      .select('jobName description location dates shifts wages hourlyRate breakTime requirements');
+
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    res.status(200).json(job);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+//apply for job
+exports.applyForJob = async (req, res) => {
+  try {
+    const { jobId, shift } = req.body;
+    const userId = req.user.id; // Assuming user ID is available from authentication middleware
+
+    const application = new Application({
+      user: userId,
+      job: jobId,
+      shift,
+    });
+
+    await application.save();
+
+    res.status(201).json({ success: true, message: 'Successfully applied for the job.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+//Retrieve job counts or available shifts for each date.
+exports.getJobsByDate = async (req, res) => {
+  try {
+    const dates = await Job.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+          jobCount: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.status(200).json({ dates });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// const mongoose = require('mongoose');
+
+// exports.getJobs = async (req, res) => {
+//   try {
+//     const { page = 1, limit = 10, search, status, location, shiftsMin, shiftsMax } = req.query;
+
+//     const matchStage = {
+//       $match: {},
+//     };
+
+//     // Add filters dynamically
+//     if (search) matchStage.$match.jobName = { $regex: search, $options: 'i' };
+//     if (status) matchStage.$match.status = status;
+//     if (location) matchStage.$match.location = { $regex: location, $options: 'i' };
+
+//     const aggregationPipeline = [
+//       // Match filters
+//       matchStage,
+
+//       // Lookup applicants associated with the job
+//       {
+//         $lookup: {
+//           from: 'applications', // The applicants collection
+//           localField: 'applicants',
+//           foreignField: '_id',
+//           as: 'applicants',
+//         },
+//       },
+
+//       // Lookup payments associated with each applicant
+//       {
+//         $lookup: {
+//           from: 'payments', // The payments collection
+//           localField: 'applicants.payment',
+//           foreignField: '_id',
+//           as: 'payments',
+//         },
+//       },
+
+//       // Populate shifts data
+//       {
+//         $lookup: {
+//           from: 'shifts',
+//           localField: 'shifts',
+//           foreignField: '_id',
+//           as: 'shifts',
+//         },
+//       },
+
+//       // Optionally filter the number of shifts (if shiftsMin and shiftsMax are provided)
+//       ...(shiftsMin || shiftsMax
+//         ? [
+//             {
+//               $addFields: {
+//                 shiftCount: { $size: '$shifts' },
+//               },
+//             },
+//             {
+//               $match: {
+//                 ...(shiftsMin && { shiftCount: { $gte: Number(shiftsMin) } }),
+//                 ...(shiftsMax && { shiftCount: { $lte: Number(shiftsMax) } }),
+//               },
+//             },
+//           ]
+//         : []),
+
+//       // Pagination: Skip and limit
+//       { $skip: (page - 1) * Number(limit) },
+//       { $limit: Number(limit) },
+
+//       // Project the required fields
+//       {
+//         $project: {
+//           _id: 1,
+//           jobName: 1,
+//           location: 1,
+//           status: 1,
+//           shifts: 1,
+//           applicants: 1,
+//           payments: 1,
+//         },
+//       },
+//     ];
+
+//     // Execute the aggregation pipeline
+//     const jobs = await Job.aggregate(aggregationPipeline);
+
+//     // Get total count for pagination
+//     const totalJobs = await Job.countDocuments(matchStage.$match);
+
+//     // Send the response
+//     res.status(200).json({
+//       jobs,
+//       totalPages: Math.ceil(totalJobs / limit),
+//       currentPage: page,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+
 
 // Update job details
 exports.updateJob = async (req, res) => {
@@ -108,6 +270,7 @@ exports.getFilters = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 
 

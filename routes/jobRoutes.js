@@ -1,18 +1,21 @@
 const express = require('express');
-const { createJob, getJobs, updateJob, getFilters, getDashboardMetrics, viewJob, modifyJob, duplicateJob, deactivateJob, cancelJob} = require('../controllers/jobController');
+const { createJob, getJobs, getJobById, updateJob, getFilters, getDashboardMetrics, viewJob, modifyJob, duplicateJob, deactivateJob, cancelJob, getJobsByDate, applyForJob} = require('../controllers/jobController');
+const authMiddleware  = require('../middlewares/auth');
 
 const router = express.Router();
 
 router.post('/', createJob);
-router.get('/', getJobs);
-router.put('/:jobId', updateJob);
-router.get('/filter', getFilters);
+router.get('/', authMiddleware, getJobs);
+router.get('/date',authMiddleware, getJobsByDate);
 router.get('/metrics', getDashboardMetrics);
-router.get('/view/:jobId', viewJob);
-router.put('/modify/:jobId', modifyJob);
-router.post('/duplicate', duplicateJob);
-router.put('/deactivate/:jobId', deactivateJob);
-router.put('/cancel/:jobId', cancelJob);
-
+router.get('/:id',authMiddleware, getJobById);
+router.put('/:id', updateJob);
+router.get('/filter', getFilters);
+router.get('/:jobId/view', viewJob);
+router.put('/:jobId/modify', modifyJob);
+router.post('/:jobId/duplicate', duplicateJob);
+router.put('/:jobId/deactivate', deactivateJob);
+router.delete('/:jobId', cancelJob);
+router.post('/apply',authMiddleware, applyForJob);
 
 module.exports = router;
