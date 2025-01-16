@@ -1,99 +1,72 @@
-// const Profile = require('../models/Profile.js');
-const User = require('../models/userModel');
-// const School = require('../models/schoolModel'); 
+const Profile = require("../models/Profile");
+const User = require("../models/User");
+const Job = require("../models/Job");
+
+exports.completeProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; 
+    const { fullName, nricOrFinNumber, dateOfBirth, gender, postalCode, images, extraFields } = req.body;
+
+    const profile = new Profile({ userId, fullName, nricOrFinNumber, dateOfBirth, gender, postalCode, images, extraFields });
+    const savedProfile = await profile.save();
+
+    await User.findByIdAndUpdate(userId, { profileCompleted: true, profileId: savedProfile._id });
+
+    res.status(201).json({ message: "Profile completed successfully.", profile: savedProfile });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to complete profile.", details: err.message });
+  }
+};
+
 
 exports.getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
+    try {
+      const userId = req.user.id; 
+  
+      const profile = await Profile.findOne({ userId });
+      if (!profile) return res.status(404).json({ error: "Profile not found." });
+  
+      res.status(200).json(profile);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch profile.", details: err.message });
+    }
+  };
 
-exports.updateProfile = async (req, res) => {
-  try {
-    const updatedUser = await User.findByIdAndUpdate(req.user.id, req.body, { new: true });
-    res.status(200).json(updatedUser);
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
+  exports.updateProfile = async (req, res) => {
+    try {
+      const userId = req.user.id; 
+      const updates = req.body;
+  
+      const updatedProfile = await Profile.findOneAndUpdate({ userId }, updates, { new: true });
+      if (!updatedProfile) return res.status(404).json({ error: "Profile not found." });
+  
+      res.status(200).json({ message: "Profile updated successfully.", profile: updatedProfile });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to update profile.", details: err.message });
+    }
+  };
 
-exports.uploadNricImage = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    user.nricImages = {
-      front: req.files['nricFront'][0].path,
-      back: req.files['nricBack'][0].path
-    };
-    await user.save();
-    res.status(200).json({ message: 'NRIC Images Uploaded Successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
-
-exports.uploadPlocImage = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    user.plocImage = req.file.path;
-    await user.save();
-    res.status(200).json({ message: 'PLOC Image Uploaded Successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
-
-exports.updatePlocExpiryDate = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    user.plocExpiryDate = req.body.expiryDate;
-    await user.save();
-    res.status(200).json({ message: 'PLOC Expiry Date Updated Successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
-
-exports.uploadFoodHygieneCert = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    user.foodHygieneCert = req.file.path;
-    await user.save();
-    res.status(200).json({ message: 'Food Hygiene Certificate Uploaded Successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
-
-exports.uploadStudentPassImage = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    user.studentPassImage = req.file.path;
-    await user.save();
-    res.status(200).json({ message: 'Student Pass Image Uploaded Successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
-
-exports.fetchSchoolsList = async (req, res) => {
-  try {
-    const schools = await School.find(); // Replace with actual data retrieval
-    res.status(200).json(schools);
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
-
-exports.submitForApproval = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    user.isProfileApproved = true;
-    await user.save();
-    res.status(200).json({ message: 'Profile Submitted for Approval' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
+  exports.getProfileStats = async (req, res) => {
+    try {
+      const userId = req.user.id;
+  
+      const totalCompletedJobs = await Job.countDocuments({ applicants: { $elemMatch: { user: userId } }, status: "Completed" });
+      const totalCancelledJobs = await Job.countDocuments({ applicants: { $elemMatch: { user: userId } }, status: "Cancelled" });
+      const noShowJobs = 0; // Placeholder for no-show jobs, calculate if applicable
+      const totalHoursWorked = await Job.aggregate([
+        { $match: { applicants: { $elemMatch: { user: userId } }, status: "Completed" } },
+        { $lookup: { from: "shifts", localField: "shifts", foreignField: "_id", as: "shiftDetails" } },
+        { $unwind: "$shiftDetails" },
+        { $group: { _id: null, totalHours: { $sum: "$shiftDetails.duration" } } },
+      ]);
+  
+      res.status(200).json({
+        totalCompletedJobs,
+        totalCancelledJobs,
+        noShowJobs,
+        totalHoursWorked: totalHoursWorked[0]?.totalHours || 0,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch profile stats.", details: err.message });
+    }
+  };

@@ -15,4 +15,4 @@ const userSchema = new mongoose.Schema({
 });
 
 // Check if the model already exists before compiling
-module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+module.exports = mongoose.models.User || mongoose.model("UserModel", userSchema);

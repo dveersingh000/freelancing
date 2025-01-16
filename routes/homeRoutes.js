@@ -10,7 +10,6 @@ const {
   getDates,
   getEWalletBalance,
   getJobManagement,
-  getProfileInfo
 } = require('../controllers/homeController');
 
 const router = express.Router();
@@ -22,8 +21,7 @@ router.get('/shifts/availability', getShiftAvailability);
 router.post('/jobs/apply', applyForJob);
 router.get('/notifications', getNotifications);
 router.get('/dates/navigation', getDates);
-router.get('/ewallet/balance', getEWalletBalance);
+// router.get('/ewallet/balance', getEWalletBalance);
 router.get('/jobs/manage', getJobManagement);
-router.get('/profile/info', getProfileInfo);
 
 module.exports = router;

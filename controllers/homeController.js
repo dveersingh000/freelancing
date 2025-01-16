@@ -1,21 +1,21 @@
-const User = require('../models/userModel');
+const User = require('../models/User');
 const Job = require('../models/Job');
-const Notification = require('../models/Notification'); // Assuming Notification model exists
-const EWallet = require('../models/EWallet'); // Assuming EWallet model exists
+const Notification = require('../models/Notification'); 
+// const EWallet = require('../models/EWallet');
 
 // Fetches user details
 exports.getUserInfo = async (req, res) => {
   try {
-    const user = await User.findById(req.query.user_id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const userId = req.user.id; 
+    const user = await User.findById(userId).select('fullName profilePicture');
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.status(200).json({
-      name: user.name,
-      profilePicture: user.profilePicture,
-      greeting: `Good morning! ${user.name}`
+      fullName: user.fullName,
+      profilePicture: user.profilePicture || 'http://localhost:3000/static/images/image.png',
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+    res.status(500).json({ message: 'Server error', error });
   }
 };
 
@@ -96,16 +96,16 @@ exports.getDates = (req, res) => {
 };
 
 // Get user's e-wallet balance
-exports.getEWalletBalance = async (req, res) => {
-  try {
-    const wallet = await EWallet.findOne({ userId: req.query.user_id });
-    if (!wallet) return res.status(404).json({ error: 'E-wallet not found' });
+// exports.getEWalletBalance = async (req, res) => {
+//   try {
+//     const wallet = await EWallet.findOne({ userId: req.query.user_id });
+//     if (!wallet) return res.status(404).json({ error: 'E-wallet not found' });
 
-    res.status(200).json({ balance: wallet.balance });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
+//     res.status(200).json({ balance: wallet.balance });
+//   } catch (error) {
+//     res.status(500).json({ error: 'Server Error' });
+//   }
+// };
 
 // Manage user's applied jobs
 exports.getJobManagement = async (req, res) => {
@@ -117,18 +117,3 @@ exports.getJobManagement = async (req, res) => {
   }
 };
 
-// Fetch profile information
-exports.getProfileInfo = async (req, res) => {
-  try {
-    const user = await User.findById(req.query.user_id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    res.status(200).json({
-      name: user.name,
-      email: user.email,
-      profilePicture: user.profilePicture
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};

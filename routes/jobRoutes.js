@@ -1,18 +1,25 @@
-// routes/jobRoutes.js
 const express = require('express');
-const {
-  getOngoingJobs,
-  getCompletedJobs,
-  getCancelledJobs,
-  getJobDetails,
-  cancelJob
-} = require('../controllers/jobController');
+const { createJob, getJobs, getJobById, updateJob, getFilters, getDashboardMetrics, viewJob, modifyJob, duplicateJob, deactivateJob, cancelJob, getJobsByDate, applyForJob, getUserJobs, getOngoingJobs, getCompletedJobs, getCancelledJobs} = require('../controllers/jobController');
+const authMiddleware  = require('../middlewares/auth');
+
 const router = express.Router();
 
+router.post('/', createJob);
+router.get('/', getJobs);
+router.get('/date',authMiddleware, getJobsByDate);
+router.get('/metrics', getDashboardMetrics);
+router.get('/:id',authMiddleware, getJobById);
+router.put('/:id', updateJob);
+router.get('/filter', getFilters);
+router.get('/:jobId/view', viewJob);
+router.put('/:jobId/modify', modifyJob);
+router.post('/:jobId/duplicate', duplicateJob);
+router.put('/:jobId/deactivate', deactivateJob);
+router.delete('/:jobId', cancelJob);
+router.post('/apply',authMiddleware, applyForJob);
+router.get('/user-jobs',authMiddleware, getUserJobs);
 router.get('/ongoing', getOngoingJobs);
 router.get('/completed', getCompletedJobs);
 router.get('/cancelled', getCancelledJobs);
-router.get('/details', getJobDetails);
-router.post('/cancel', cancelJob);
 
 module.exports = router;

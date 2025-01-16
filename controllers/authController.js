@@ -1,135 +1,162 @@
-const crypto = require("crypto");
-const bcrypt = require("bcrypt");
-const User = require("../models/userModel");
-const sendSms = require("../utils/sendSms");
+const User = require('../models/User');
+const { verifyOTP, sendOTP } = require('../utils/otpUtils');
+const { generateToken } = require('../utils/jwtUtils');
+const Notification = require('../models/Notification');
 
+exports.getUserDynamicDetails = async (req, res) => {
+  try {
+    // const userId = req.user.id;
+    const userId = req.params.id;
+
+    // Fetch unread notifications count
+    const unreadNotifications = await Notification.countDocuments({ user: userId, read: false });
+
+    res.status(200).json({
+      unreadNotifications,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.login = async (req, res) => {
+  const { phoneNumber, otp } = req.body;
+
+  try {
+    if (!phoneNumber || !otp) {
+      return res.status(400).json({ message: 'Phone number and OTP are required' });
+    }
+
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify OTP using Twilio
+    const isValidOtp = await verifyOTP(phoneNumber, otp);
+    if (!isValidOtp) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Generate JWT token
+    const token = generateToken({ id: user._id });
+
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        email: user.email,
+        employmentStatus: user.employmentStatus,
+        profilePicture: user.profilePicture,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// Generate OTP
 exports.generateOtp = async (req, res) => {
-    const { phoneNumber } = req.body;
-    try {
-        const otp = crypto.randomInt(100000, 999999).toString();
-        const hashedOtp = await bcrypt.hash(otp, 10);
+  const { phoneNumber, fullName, email, employmentStatus } = req.body;
 
-        let user = await User.findOne({ phoneNumber });
-        if (!user) {
-            user = new User({ phoneNumber });
-        }
-
-        user.otp = hashedOtp;
-        user.otpExpiry = Date.now() + 60 * 1000; 
-        await user.save();
-
-        await sendSms(phoneNumber, `Your OTP is ${otp}`);
-        res.status(200).json({ message: "OTP sent successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Error generating OTP", error });
+  try {
+    if (!phoneNumber) {
+      return res.status(400).json({ message: 'Phone number is required.' });
     }
+    const user = await User.findOne({ phoneNumber });
+
+    // Flag to indicate whether the user is registered
+    const isRegistered = !!user;
+
+    // Send OTP using Twilio
+    const otpStatus = await sendOTP(phoneNumber);
+    if (otpStatus !== 'pending') {
+      return res.status(500).json({ message: 'Failed to send OTP. Try again later.' });
+    }
+
+    res.status(200).json({ 
+      message: 'OTP sent successfully.',
+      isRegistered, 
+    });
+  } catch (error) {
+    console.error('Error generating OTP:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
 };
 
-exports.verifyOtp = async (req, res) => {
-    const { phoneNumber, otp } = req.body;
-    try {
-        const user = await User.findOne({ phoneNumber });
-        if (!user || !user.otp) {
-            return res.status(400).json({ message: "Invalid or expired OTP" });
-        }
-
-        const isOtpValid = await bcrypt.compare(otp, user.otp);
-        if (!isOtpValid || user.otpExpiry < Date.now()) {
-            return res.status(400).json({ message: "Invalid or expired OTP" });
-        }
-
-        user.isVerified = true;
-        user.otp = undefined;
-        user.otpExpiry = undefined;
-        await user.save();
-
-        res.status(200).json({ message: "OTP verified successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Error verifying OTP", error });
-    }
-};
-
-exports.registerUser = async (req, res) => {
-    const { fullName, phoneNumber, email, workPassStatus } = req.body;
-
-    try {
-        let user = await User.findOne({ phoneNumber });
-        if (user) {
-            // If the user exists but is unverified, resend OTP
-            if (!user.isVerified) {
-                const otp = generateOTP(); // Generate a 6-digit OTP
-                user.otp = otp;
-                user.otpExpiry = Date.now() + 5 * 60 * 1000; // Expires in 5 minutes
-                await user.save();
-                sendOtp(phoneNumber, otp); // Send OTP (SMS or Email)
-                return res.status(200).json({
-                    message: "OTP resent successfully. Please verify to continue.",
-                });
-            }
-
-            // If the user is already verified, return an error
-            return res.status(400).json({
-                message: "User already exists and verified. Please log in.",
-            });
-        }
-
-        // If the user does not exist, create a new one
-        const otp = generateOTP(); // Generate a 6-digit OTP
-        user = new User({
-            fullName,
-            phoneNumber,
-            email,
-            workPassStatus,
-            otp,
-            otpExpiry: Date.now() + 5 * 60 * 1000, // Expires in 5 minutes
-        });
-
-        await user.save();
-        sendOtp(phoneNumber, otp); // Send OTP (SMS or Email)
-
-        res.status(201).json({
-            message: "OTP sent successfully. Please verify to continue.",
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error registering user", error });
-    }
-};
-
+// Resend OTP
 exports.resendOtp = async (req, res) => {
-    const { phoneNumber } = req.body;
-    try {
-        const otp = crypto.randomInt(100000, 999999).toString();
-        const hashedOtp = await bcrypt.hash(otp, 10);
+  const { phoneNumber } = req.body;
 
-        const user = await User.findOne({ phoneNumber });
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+  try {
+    const user = await User.findOne({ phoneNumber });
+    // if (!user) {
+    //   return res.status(404).json({ message: 'User not found.' });
+    // }
 
-        user.otp = hashedOtp;
-        user.otpExpiry = Date.now() + 60 * 1000;
-        await user.save();
-
-        await sendSms(phoneNumber, `Your OTP is ${otp}`);
-        res.status(200).json({ message: "OTP resent successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Error resending OTP", error });
+    // Send OTP using Twilio
+    const otpStatus = await sendOTP(phoneNumber);
+    if (otpStatus !== 'pending') {
+      return res.status(500).json({ message: 'Failed to resend OTP. Try again later.' });
     }
+
+    res.status(200).json({ message: 'OTP sent successfully.' });
+  } catch (error) {
+    console.error('Error resending OTP:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
 };
 
-// exports.login = async (req, res) => { 
-//     const { country_code, mobile_number, otp } = req.body; 
-//     try { 
-//         const isValid = verifyOtp(country_code, mobile_number, otp); 
-//         if (isValid) { 
-//             const user = await User.findOne({ country_code, mobile_number }); 
-//             const token = generateToken(user._id); 
-//             res.status(200).json({ message: 'Login successful', token }); 
-//         } else { 
-//             res.status(401).json({ error: 'Invalid OTP' }); 
-//         } 
-//     } catch (error) { 
-//         res.status(500).json({ error: 'Server Error' }); 
-//     } 
-// };
+// Register User
+exports.registerUser = async (req, res) => {
+  const { fullName, phoneNumber, email, employmentStatus, otp } = req.body;
+  // console.log(req.body);
+
+  try {
+    // Validate required fields
+    if (!fullName || !phoneNumber || !email || !employmentStatus || !otp) {
+      return res.status(400).json({
+        message: 'All fields are required.',
+      });
+    }
+    const ifUserExists = await User.findOne({ phoneNumber });
+    if (ifUserExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Verify OTP using Twilio
+    const isValidOtp = await verifyOTP(phoneNumber, otp);
+    if (!isValidOtp) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    const user = new User({ fullName, phoneNumber, email, employmentStatus });
+
+    await user.save();
+    res.status(200).json({ message: 'User registered successfully.'});
+
+  } catch (error) {
+    console.error('Error during user registration:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+
+// Get all users
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find(); // Fetch all users
+    res.status(200).json({ message: 'Users fetched successfully', users });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+

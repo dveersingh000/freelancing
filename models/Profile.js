@@ -1,24 +1,28 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const profileSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   fullName: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  nric: { type: String },
-  dob: { type: Date },
-  postalCode: { type: String },
-  gender: { type: String, enum: ['Male', 'Female'] },
-  nricImages: {
-    front: { type: String },
-    back: { type: String }
+  nricOrFinNumber: { type: String, required: true },
+  dateOfBirth: { type: Date, required: true },
+  gender: { type: String, enum: ["Male", "Female"], required: true },
+  postalCode: { type: String, required: true },
+  images: {
+    selfie: { type: String, required: true },
+    front: { type: String, required: true },
+    back: { type: String, required: true },
+    ploc: { type: String }, // for LTVP
+    studentCard: { type: String }, // for Student
   },
-  plocImage: { type: String },
-  plocExpiryDate: { type: Date },
-  foodHygieneCert: { type: String },
-  studentPassImage: { type: String },
-  school: { type: String },
-  studentId: { type: String },
-  isProfileApproved: { type: Boolean, default: false }
+  extraFields: {
+    student: {
+      studentId: { type: String },
+      schoolName: { type: String },
+    },
+    ltvp: {
+      plocExpiryDate: { type: Date },
+    },
+  },
 });
 
-module.exports = mongoose.model('Profile', profileSchema);
+module.exports = mongoose.model("Profile", profileSchema);

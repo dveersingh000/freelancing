@@ -1,11 +1,8 @@
-// models/Penalty.js
 const mongoose = require('mongoose');
 
-const penaltySchema = new mongoose.Schema({
-  user_id: String,
-  points: Number,
-  reason: String,
-  date: { type: Date, default: Date.now }
-});
+const PenaltySchema = new mongoose.Schema({
+  timeframe: { type: String, required: true },
+  penalty: { type: String, required: true },
+}, { timestamps: true });
 
-module.exports = mongoose.model('Penalty', penaltySchema);
+module.exports = mongoose.model('Penalty', PenaltySchema);
