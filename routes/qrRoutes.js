@@ -1,10 +1,11 @@
 const express = require('express');
-const { scanQRCode } = require('../controllers/qrController');
+const router = express.Router();
+const { validateQRCode, clockInOut } = require('../controllers/qrController');
 const authMiddleware = require('../middlewares/auth');
 
-const router = express.Router();
 
-// Route to scan QR Code and clock in/out
-router.post('/', scanQRCode);
+
+router.post('/validate', authMiddleware, validateQRCode);
+router.post('/clock', authMiddleware, clockInOut);
 
 module.exports = router;

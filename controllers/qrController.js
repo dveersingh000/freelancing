@@ -1,62 +1,102 @@
+const geolib = require('geolib');
 const Job = require('../models/Job');
 const Shift = require('../models/Shift');
 const Attendance = require('../models/Attendance');
-const haversine = require('haversine-distance');
+const mongoose = require('mongoose');
 
-exports.scanQRCode = async (req, res) => {
+// Validate QR Code
+
+exports.validateQRCode = async (req, res) => {
   try {
-    const { qrCodeData, userLatitude, userLongitude, action, shiftId } = req.body;
+    const { jobId, shiftId, action } = req.body;
 
-    // Decode the QR Code (Assuming it contains the jobId)
-    const { jobId } = JSON.parse(qrCodeData);
+    // Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ error: 'Invalid Job ID format.' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(shiftId)) {
+      return res.status(400).json({ error: 'Invalid Shift ID format.' });
+    }
 
-    // Validate the job
-    const job = await Job.findById(jobId).populate('shifts');
+    // Validate Job
+    const job = await Job.findById(jobId);
     if (!job) {
-      return res.status(404).json({ message: 'Job not found.' });
+      return res.status(404).json({ error: 'Job not found.' });
     }
 
-    // Perform geofencing validation
-    const [jobLatitude, jobLongitude] = job.location.split(',').map(Number);
-    const jobCoordinates = { latitude: jobLatitude, longitude: jobLongitude };
-    const userCoordinates = { latitude: userLatitude, longitude: userLongitude };
-
-    const distance = haversine(jobCoordinates, userCoordinates);
-    const geofenceLimit = 1000; // meters
-
-    if (distance > geofenceLimit) {
-      return res.status(400).json({ message: 'You are outside the allowed area.' });
-    }
-
-    // Check if the selected shift is valid
+    // Validate Shift
     const shift = await Shift.findById(shiftId);
-    if (!shift || String(shift.job) !== String(jobId)) {
-      return res.status(404).json({ message: 'Shift not found or does not belong to the selected job.' });
+    if (!shift) {
+      return res.status(404).json({ error: 'Shift not found.' });
     }
 
-    // Log attendance (Clock In/Out)
-    const attendance = new Attendance({
-      userId: req.user.id,
-      jobId: jobId,
-      shiftId: shiftId,
-      action: action, // clock_in or clock_out
-      timestamp: new Date(),
-    });
+    // Log shift object for debugging
+    console.log('Shift Object:', shift);
 
-    await attendance.save();
+    // Check if Shift belongs to the Job
+    if (!shift.jobId) {
+      return res.status(400).json({ error: 'Shift is missing job reference.' });
+    }
+    if (shift.jobId.toString() !== jobId) {
+      return res.status(404).json({ error: 'Invalid shift for the job.' });
+    }
 
-    res.status(200).json({
-      message: `Successfully ${action}.`,
-      attendance,
-      job: {
-        jobName: job.jobName,
-        company: job.company,
-        outlet: job.outlet,
-        shiftDetails: shift,
-      },
-    });
-  } catch (error) {
-    console.error('Error scanning QR Code:', error);
-    res.status(500).json({ message: 'Server error', error });
+    // Validate Action
+    if (!['check_in', 'check_out'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action.' });
+    }
+
+    res.status(200).json({ message: 'QR code validated successfully.', job, shift });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to validate QR code.', details: err.message });
+  }
+};
+
+
+// Clock In/Out
+exports.clockInOut = async (req, res) => {
+  try {
+    const { jobId, shiftId, action, latitude, longitude } = req.body;
+    const userId = req.user.id;
+
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ error: 'Job not found.' });
+    const shift = await Shift.findById(shiftId);
+    if (!shift) return res.status(404).json({ error: 'Shift not found.' });
+
+    const isWithinRadius = geolib.isPointWithinRadius(
+      { latitude, longitude },
+      { latitude: job.locationCoordinates.latitude, longitude: job.locationCoordinates.longitude },
+      100
+    );
+
+    if (!isWithinRadius) {
+      return res.status(400).json({ error: 'User is not within the allowed location radius.' });
+    }
+
+    const attendance = await Attendance.findOne({ user: userId, shift: shiftId });
+
+    if (action === 'check_in') {
+      if (attendance?.clockIn) {
+        return res.status(400).json({ error: 'Already checked in for this shift.' });
+      }
+      await Attendance.create({ user: userId, job: jobId, shift: shiftId, clockIn: new Date() });
+      return res.status(200).json({ message: 'Clocked in successfully.' });
+    } else if (action === 'check_out') {
+      if (!attendance?.clockIn) {
+        return res.status(400).json({ error: 'Cannot clock out without clocking in.' });
+      }
+      if (attendance.clockOut) {
+        return res.status(400).json({ error: 'Already clocked out for this shift.' });
+      }
+      attendance.clockOut = new Date();
+      await attendance.save();
+      return res.status(200).json({ message: 'Clocked out successfully.' });
+    }
+
+    res.status(400).json({ error: 'Invalid action.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to clock in/out.', details: err.message });
   }
 };

@@ -1,65 +1,61 @@
 const Employer = require('../models/Employer');
 const Job = require('../models/Job');
+const Outlet = require('../models/Outlet');
 
-// Fetch all employers
-exports.getEmployers = async (req, res) => {
+// Get all employers
+exports.getAllEmployers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, sort = 'name', filter = {} } = req.query;
-    const employers = await Employer.find(filter)
-      .sort(sort)
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
-    const total = await Employer.countDocuments(filter);
-    res.status(200).json({ employers, total });
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching employers' });
+    const employers = await Employer.find().populate('outlets');
+    res.status(200).json(employers);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch employers.', details: err.message });
   }
 };
 
-// Fetch employer details
+// Get employer by ID
 exports.getEmployerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const employer = await Employer.findById(id);
-    if (!employer) return res.status(404).json({ message: 'Employer not found' });
+    const employer = await Employer.findById(id).populate('outlets');
+    if (!employer) return res.status(404).json({ error: 'Employer not found.' });
     res.status(200).json(employer);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching employer details' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch employer.', details: err.message });
   }
 };
 
-// Add a new employer
-exports.addEmployer = async (req, res) => {
+// Create new employer
+exports.createEmployer = async (req, res) => {
   try {
-    const newEmployer = new Employer(req.body);
-    await newEmployer.save();
-    res.status(201).json(newEmployer);
-  } catch (error) {
-    res.status(400).json({ message: 'Error adding employer' });
+    const employer = new Employer(req.body);
+    const savedEmployer = await employer.save();
+    res.status(201).json(savedEmployer);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create employer.', details: err.message });
   }
 };
 
-// Update employer details
+// Update employer
 exports.updateEmployer = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedEmployer = await Employer.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updatedEmployer) return res.status(404).json({ message: 'Employer not found' });
+    if (!updatedEmployer) return res.status(404).json({ error: 'Employer not found.' });
     res.status(200).json(updatedEmployer);
-  } catch (error) {
-    res.status(400).json({ message: 'Error updating employer' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update employer.', details: err.message });
   }
 };
 
-// Delete an employer
+// Delete employer
 exports.deleteEmployer = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedEmployer = await Employer.findByIdAndDelete(id);
-    if (!deletedEmployer) return res.status(404).json({ message: 'Employer not found' });
-    res.status(200).json({ message: 'Employer deleted successfully' });
-  } catch (error) {
-    res.status(400).json({ message: 'Error deleting employer' });
+    if (!deletedEmployer) return res.status(404).json({ error: 'Employer not found.' });
+    res.status(200).json({ message: 'Employer deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete employer.', details: err.message });
   }
 };
 

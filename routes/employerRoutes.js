@@ -1,8 +1,8 @@
 const express = require('express');
 const {
-  getEmployers,
+  getAllEmployers,
   getEmployerById,
-  addEmployer,
+  createEmployer,
   updateEmployer,
   deleteEmployer,
   getEmployerJobs,
@@ -12,9 +12,9 @@ const {
 } = require('../controllers/employerController');
 const router = express.Router();
 
-router.get('/', getEmployers);
+router.get('/', getAllEmployers);
 router.get('/:id', getEmployerById);
-router.post('/', addEmployer);
+router.post('/', createEmployer);
 router.put('/:id', updateEmployer);
 router.delete('/:id', deleteEmployer);
 router.get('/:id/jobs', getEmployerJobs);

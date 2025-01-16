@@ -5,12 +5,15 @@ exports.createShift = async (req, res) => {
   try {
     const { jobId, ...shiftData } = req.body;
 
+    // Validate job existence
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ error: 'Job not found' });
 
-    const shift = new Shift({ ...shiftData, job: jobId });
+    // Create the shift and associate it with the job
+    const shift = new Shift({ ...shiftData, jobId });
     const savedShift = await shift.save();
 
+    // Update the job document
     job.shifts.push(savedShift._id);
     await job.save();
 
@@ -79,6 +82,16 @@ exports.deleteShift = async (req, res) => {
   }
 };
 
+//for qr
+exports.getJobShifts = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const shifts = await Shift.find({ job: jobId });
+    res.status(200).json({ shifts });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch shifts.', details: err.message });
+  }
+};
 
 
 

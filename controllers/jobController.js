@@ -10,6 +10,7 @@ exports.createJob = async (req, res) => {
     const job = new Job({
       jobName,
       company,
+      // outlet,
       location,
       industry,
       date,
@@ -22,11 +23,15 @@ exports.createJob = async (req, res) => {
 
     // If shifts are provided, create and associate them
     if (shifts && shifts.length > 0) {
+      const shiftIds = [];
       for (const shiftData of shifts) {
-        const shift = new Shift({ ...shiftData, job: savedJob._id });
-        await shift.save();
-        savedJob.shifts.push(shift._id);
+        const shift = new Shift({ ...shiftData, jobId: savedJob._id });
+        const savedShift = await shift.save();
+        shiftIds.push(savedShift._id);
       }
+
+      // Update the job document with the shift IDs
+      savedJob.shifts = shiftIds;
       await savedJob.save();
     }
 
@@ -416,5 +421,16 @@ exports.cancelJob = async (req, res) => {
     res.status(200).json(cancelledJob);
   } catch (err) {
     res.status(500).json({ error: 'Failed to cancel job', details: err.message });
+  }
+};
+
+//for qr
+exports.getUserJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const jobs = await Job.find({ 'applicants.user': userId });
+    res.status(200).json({ jobs });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user jobs.', details: err.message });
   }
 };
