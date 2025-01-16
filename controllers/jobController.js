@@ -140,108 +140,6 @@ exports.getJobsByDate = async (req, res) => {
   }
 };
 
-// const mongoose = require('mongoose');
-
-// exports.getJobs = async (req, res) => {
-//   try {
-//     const { page = 1, limit = 10, search, status, location, shiftsMin, shiftsMax } = req.query;
-
-//     const matchStage = {
-//       $match: {},
-//     };
-
-//     // Add filters dynamically
-//     if (search) matchStage.$match.jobName = { $regex: search, $options: 'i' };
-//     if (status) matchStage.$match.status = status;
-//     if (location) matchStage.$match.location = { $regex: location, $options: 'i' };
-
-//     const aggregationPipeline = [
-//       // Match filters
-//       matchStage,
-
-//       // Lookup applicants associated with the job
-//       {
-//         $lookup: {
-//           from: 'applications', // The applicants collection
-//           localField: 'applicants',
-//           foreignField: '_id',
-//           as: 'applicants',
-//         },
-//       },
-
-//       // Lookup payments associated with each applicant
-//       {
-//         $lookup: {
-//           from: 'payments', // The payments collection
-//           localField: 'applicants.payment',
-//           foreignField: '_id',
-//           as: 'payments',
-//         },
-//       },
-
-//       // Populate shifts data
-//       {
-//         $lookup: {
-//           from: 'shifts',
-//           localField: 'shifts',
-//           foreignField: '_id',
-//           as: 'shifts',
-//         },
-//       },
-
-//       // Optionally filter the number of shifts (if shiftsMin and shiftsMax are provided)
-//       ...(shiftsMin || shiftsMax
-//         ? [
-//             {
-//               $addFields: {
-//                 shiftCount: { $size: '$shifts' },
-//               },
-//             },
-//             {
-//               $match: {
-//                 ...(shiftsMin && { shiftCount: { $gte: Number(shiftsMin) } }),
-//                 ...(shiftsMax && { shiftCount: { $lte: Number(shiftsMax) } }),
-//               },
-//             },
-//           ]
-//         : []),
-
-//       // Pagination: Skip and limit
-//       { $skip: (page - 1) * Number(limit) },
-//       { $limit: Number(limit) },
-
-//       // Project the required fields
-//       {
-//         $project: {
-//           _id: 1,
-//           jobName: 1,
-//           location: 1,
-//           status: 1,
-//           shifts: 1,
-//           applicants: 1,
-//           payments: 1,
-//         },
-//       },
-//     ];
-
-//     // Execute the aggregation pipeline
-//     const jobs = await Job.aggregate(aggregationPipeline);
-
-//     // Get total count for pagination
-//     const totalJobs = await Job.countDocuments(matchStage.$match);
-
-//     // Send the response
-//     res.status(200).json({
-//       jobs,
-//       totalPages: Math.ceil(totalJobs / limit),
-//       currentPage: page,
-//     });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// };
-
-
 
 // Update job details
 exports.updateJob = async (req, res) => {
@@ -432,5 +330,32 @@ exports.getUserJobs = async (req, res) => {
     res.status(200).json({ jobs });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch user jobs.', details: err.message });
+  }
+};
+
+exports.getOngoingJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: 'Ongoing' });
+    res.status(200).json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch ongoing jobs', details: error.message });
+  }
+};
+
+exports.getCompletedJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: 'Completed' });
+    res.status(200).json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch completed jobs', details: error.message });
+  }
+};
+
+exports.getCancelledJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: 'Cancelled' });
+    res.status(200).json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch cancelled jobs', details: error.message });
   }
 };

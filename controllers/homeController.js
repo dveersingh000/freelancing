@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Job = require('../models/Job');
 const Notification = require('../models/Notification'); 
-const EWallet = require('../models/EWallet');
+// const EWallet = require('../models/EWallet');
 
 // Fetches user details
 exports.getUserInfo = async (req, res) => {
@@ -96,16 +96,16 @@ exports.getDates = (req, res) => {
 };
 
 // Get user's e-wallet balance
-exports.getEWalletBalance = async (req, res) => {
-  try {
-    const wallet = await EWallet.findOne({ userId: req.query.user_id });
-    if (!wallet) return res.status(404).json({ error: 'E-wallet not found' });
+// exports.getEWalletBalance = async (req, res) => {
+//   try {
+//     const wallet = await EWallet.findOne({ userId: req.query.user_id });
+//     if (!wallet) return res.status(404).json({ error: 'E-wallet not found' });
 
-    res.status(200).json({ balance: wallet.balance });
-  } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
-  }
-};
+//     res.status(200).json({ balance: wallet.balance });
+//   } catch (error) {
+//     res.status(500).json({ error: 'Server Error' });
+//   }
+// };
 
 // Manage user's applied jobs
 exports.getJobManagement = async (req, res) => {
