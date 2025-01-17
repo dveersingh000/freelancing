@@ -1,41 +1,47 @@
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
-
-const User = require("../models/userModel");
+const User = require("../models/User"); 
 dotenv.config();
 
-const auth = async (req, res, next) => {
-  try {
-    const token = req.cookies.token;
-    if (!token) {
-      throw new Error('Authentication required');
-    }
+// Authentication Middleware
+// const authMiddleware = async (req, res, next) => {
+//   try {
+//     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    if (decoded.role === 'ADMIN') {
-      req.user = { role: 'ADMIN', email: 'admin@example.com', fullName: 'Admin' };
-    } else {
-      const user = await User.findOne({ _id: decoded._id, role: decoded.role });
-      if (!user) {
-        throw new Error('User not found');
-      }
-      req.user = { email: user.email, fullName: user.fullName, role: user.role };
-    }
-    
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Please authenticate.' });
-  }
-};
+//     if (!token) {
+//       return res.status(401).json({ error: "Authentication required." });
+//     }
 
-const adminOnly = (req, res, next) => {
-  if (req.user.role !== 'ADMIN') {
-    return res.status(403).json({ error: 'Access denied. Admin only.' });
-  }
-  next();
-const User = require("../models/User");
-dotenv.config();
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+//     if (decoded.role === "ADMIN") {
+//       req.user = { role: "ADMIN", email: "admin@example.com", fullName: "Admin" };
+//     } else {
+//       const user = await User.findOne({ _id: decoded._id, role: decoded.role });
+
+//       if (!user) {
+//         return res.status(404).json({ error: "User not found." });
+//       }
+
+//       req.user = { email: user.email, fullName: user.fullName, role: user.role };
+//     }
+
+//     next();
+//   } catch (error) {
+//     return res.status(401).json({ error: "Invalid token or authentication failed." });
+//   }
+// };
+
+// // Admin-Only Middleware
+// const adminOnly = (req, res, next) => {
+//   if (req.user.role !== "ADMIN") {
+//     return res.status(403).json({ error: "Access denied. Admin only." });
+//   }
+//   next();
+// };
+
+// module.exports = { authMiddleware, adminOnly };
+
 
 const authMiddleware = async (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1]; 
@@ -66,4 +72,5 @@ const authMiddleware = async (req, res, next) => {
 
 };
 
-module.exports = {auth, adminOnly};
+
+module.exports ={authMiddleware};

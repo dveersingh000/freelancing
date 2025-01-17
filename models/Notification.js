@@ -3,14 +3,15 @@ const mongoose = require('mongoose');
 const notificationSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: false },
     type: {
       type: String,
-      enum: ['Job', 'Payment', 'Message', 'Alert'], // Types of notifications
+      enum: ['Job', 'Payment', 'Message', 'Alert'],
       required: true,
     },
     icon: {
-      type: String, // URL or character for the notification icon
-      required: false,
+      type: String,
+      default: '/static/notificationIcon.png',
     },
     title: { type: String, required: true }, 
     message: { type: String, required: false }, 
