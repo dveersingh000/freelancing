@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { validateQRCode, clockInOut } = require('../controllers/qrController');
-const authMiddleware = require('../middlewares/auth');
+const {authMiddleware} = require('../middlewares/auth');
 
 
 

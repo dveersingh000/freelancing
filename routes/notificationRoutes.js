@@ -6,7 +6,7 @@ const {
   deleteNotification,
   createNotification,
 } = require('../controllers/notificationController');
-const authMiddleware  = require('../middlewares/auth'); 
+const {authMiddleware}  = require('../middlewares/auth'); 
 
 const router = express.Router();
 

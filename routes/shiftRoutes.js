@@ -1,7 +1,7 @@
 const express = require("express");
 const { createShift, getShiftAvailability, getShiftById, updateShift, deleteShift, getJobShifts, getJobDetails } = require("../controllers/shiftController");
 const router = express.Router();
-const authMiddleware = require("../middlewares/auth");
+const {authMiddleware} = require("../middlewares/auth");
 
 router.post("/", createShift); 
 router.get("/", authMiddleware, getShiftAvailability); 

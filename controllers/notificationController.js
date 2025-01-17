@@ -9,7 +9,7 @@ exports.getNotifications = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .select('type message read createdAt');
+      .select('type message read icon createdAt');
 
       res.status(200).json({ notifications });
     } catch (err) {

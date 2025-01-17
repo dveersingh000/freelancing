@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/userModel");
+const User = require("../models/User");
 const dotenv = require("dotenv");
 
 const { createToken, setCookie } = require("../utils/auth");

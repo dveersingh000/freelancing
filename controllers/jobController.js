@@ -1,85 +1,57 @@
 const Job = require('../models/Job');
 const Shift = require('../models/Shift');
 const  Application = require('../models/Application');
+const Notification = require('../models/Notification');
 
 exports.createJob = async (req, res) => {
   try {
-    const { jobName, company, outlet, location, industry, date, jobDescription, jobRequirements, status, shifts } = req.body;
+    const jobData = req.body;
+    const newJob = new Job(jobData);
 
-    // Create the job
-    const job = new Job({
-      jobName,
-      company,
-      // outlet,
-      location,
-      industry,
-      date,
-      jobDescription,
-      jobRequirements,
-      status,
-    });
-
-    const savedJob = await job.save();
-
-    // If shifts are provided, create and associate them
-    if (shifts && shifts.length > 0) {
-      const shiftIds = [];
-      for (const shiftData of shifts) {
-        const shift = new Shift({ ...shiftData, jobId: savedJob._id });
-        const savedShift = await shift.save();
-        shiftIds.push(savedShift._id);
-      }
-
-      // Update the job document with the shift IDs
-      savedJob.shifts = shiftIds;
-      await savedJob.save();
-    }
-
-    res.status(201).json(savedJob);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create job', details: err.message });
+    await newJob.save();
+    res.status(201).json({ success: true, message: 'Job created successfully', data: newJob });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
-// Fetch jobs with pagination, search, and filters
+// Search Jobs
+exports.searchJobs = async (req, res) => {
+  try {
+    const { keyword, location, status } = req.query;
+
+    const filters = {};
+    if (keyword) filters.jobName = { $regex: keyword, $options: "i" };
+    if (location) filters.location = { $regex: location, $options: "i" };
+    if (status) filters.status = status;
+
+    const jobs = await Job.find(filters).select("jobName location popularity shifts status image");
+    res.status(200).json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to search jobs" });
+  }
+};
+
+//Job Listings 
 exports.getJobs = async (req, res) => {
   try {
-    const { search, status, location, page = 1, limit = 10 } = req.query;
-    
-    const filters = {};
-    // Add search keyword filter (case-insensitive)
-    if (search) {
-      filters.jobName = { $regex: search, $options: "i" }; // Search in jobName
-    }
+    const { page = 1, limit = 10 } = req.query;
 
-    // Add status filter if provided
-    if (status) {
-      filters.status = status;
-    }
-
-    // Add location filter (case-insensitive)
-    if (location) {
-      filters.location = { $regex: location, $options: "i" };
-    }
-    
-    // Paginate results
-    const jobs = await Job.find(filters)
-      .populate('shifts')
+    const jobs = await Job.find()
+      .select("jobName location popularity shifts status image dates potentialWages duration payRate createdAt")
       .skip((page - 1) * limit)
-      .limit(Number(limit))
-      // .select('jobName description location dates shifts wages hourlyRate breakTime requirements');
+      .limit(Number(limit));
 
-    const totalJobs = await Job.countDocuments(filters);
+    const totalJobs = await Job.countDocuments();
 
-    res.status(200).json({ 
+    res.status(200).json({
       jobs,
       totalPages: Math.ceil(totalJobs / limit),
       currentPage: page,
-      totalJobs,
+      totalJobs
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch jobs" });
   }
 };
 
@@ -89,9 +61,6 @@ exports.getJobById = async (req, res) => {
     const { id } = req.params;
 
     const job = await Job.findById(id)
-      .populate('shifts')
-      .populate('applicants')
-      .select('jobName description location dates shifts wages hourlyRate breakTime requirements');
 
     if (!job) return res.status(404).json({ error: 'Job not found' });
 
@@ -104,39 +73,79 @@ exports.getJobById = async (req, res) => {
 //apply for job
 exports.applyForJob = async (req, res) => {
   try {
-    const { jobId, shift } = req.body;
-    const userId = req.user.id; // Assuming user ID is available from authentication middleware
+    const { jobId, shiftId } = req.body;
+    const userId = req.user.id;
 
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ error: "Job not found" });
+
+    const shift = job.shifts.find((s) => s._id.toString() === shiftId);
+    if (!shift || shift.vacancy <= 0) {
+      return res.status(400).json({ error: "Shift is no longer available" });
+    }
+
+    // Decrement shift vacancy
+    shift.vacancy -= 1;
+    await job.save();
+
+    // Create application
     const application = new Application({
       user: userId,
       job: jobId,
-      shift,
+      shift: shiftId,
     });
 
     await application.save();
 
-    res.status(201).json({ success: true, message: 'Successfully applied for the job.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const notification = new Notification({
+      user: userId,
+      type: "Job",
+      title: "Job Application Successful",
+      message: `You have successfully applied for the job: ${job.jobName}.`,
+      icon: "/static/notificationIcon.png",
+    });
+
+    await notification.save();
+    res.status(201).json({ message: "Successfully applied for the job",
+      application,
+      notification
+     });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to apply for job" });
   }
 };
+
+//User's Applied Jobs API
+exports.getAppliedJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const applications = await Application.find({ user: userId }).populate("job");
+    const jobs = applications.map((app) => ({
+      jobName: app.job.jobName,
+      location: app.job.location,
+      status: app.job.status,
+      appliedDate: app.createdAt,
+    }));
+
+    res.status(200).json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch applied jobs" });
+  }
+};
+
 
 //Retrieve job counts or available shifts for each date.
 exports.getJobsByDate = async (req, res) => {
   try {
-    const dates = await Job.aggregate([
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
-          jobCount: { $sum: 1 },
-        },
-      },
+    const jobsByDate = await Job.aggregate([
+      { $unwind: "$dates" },
+      { $group: { _id: "$dates", jobCount: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]);
 
-    res.status(200).json({ dates });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(200).json(jobsByDate);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch jobs by date" });
   }
 };
 

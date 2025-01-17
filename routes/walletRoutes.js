@@ -1,6 +1,6 @@
 const express = require('express');
 const { getWalletBalance, getTransactionHistory, cashout } = require('../controllers/walletController');
-const authMiddleware = require('../middlewares/auth');
+const {authMiddleware} = require('../middlewares/auth');
 
 const router = express.Router();
 
