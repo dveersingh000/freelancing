@@ -1,17 +1,19 @@
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, enum: ['Cashout', 'Received'], required: true },
-  amount: { type: Number, required: true },
-  transactionId: { type: String, unique: true, required: true },
-  status: { type: String, enum: ['Pending', 'Completed', 'Failed'], default: 'Pending' },
-  details: {
-    cashoutFee: { type: Number },
-    bankName: { type: String },
-    bankAccount: { type: String },
-  },
-  createdAt: { type: Date, default: Date.now },
+  workerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  cashoutDate: { type: Date, default: Date.now },
+  cashoutAmount: { type: Number, required: true },
+  availableWalletBalance: { type: Number, required: true },
+  cashoutMethod: { type: String, enum: ['PayNow', 'Bank Transfer'], required: true }, 
+  status: {
+    type: String,
+    enum: ['Pending', 'Processing', 'Completed', 'Cancelled'],
+    default: 'Pending',
+  }, 
+  remarks: { type: String }, 
+  createdAt: { type: Date, default: Date.now }, 
+  updatedAt: { type: Date, default: Date.now }, 
 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

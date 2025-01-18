@@ -60,12 +60,84 @@ exports.getJobById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const job = await Job.findById(id)
+    // Fetch the job by ID and populate related fields
+    const jobsData = await Job.findById(id)
+      .populate("applicants.user", "name email")
+      .lean();
+      console.log(jobsData);
 
-    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (!jobsData) {
+      return res.status(404).json({ error: "Job not found" });
+    }
 
-    res.status(200).json(job);
+    // Fetch applications related to this job
+    const applications = await Application.find({ job: id }).lean();
+
+    // Add calculated fields and structure data
+    const dates = (jobsData.dates || []).map((date) => {
+      const shifts = (jobsData.shifts || []).map((shift) => {
+        // Filter applications for this shift
+        const shiftApplications = applications.filter(
+          (app) => app.shift.toString() === shift._id.toString()
+        );
+
+        const peopleApplied = shiftApplications.length || 0;
+        const totalVacancy = (shift.vacancy || 0) - peopleApplied;
+        const standbyApplied =
+          shiftApplications.filter((app) => app.status === "Approved").length ||
+          0;
+
+        const breakHours = shift.breakHours || 0;
+        const effectiveDuration = (shift.duration || 0) - breakHours; // Calculate effective work hours
+        const potentialTotalWage = effectiveDuration * (shift.payRate || 0); // Calculate total wage for this shift
+
+        return {
+          startTime: shift.startTime || "N/A",
+          endTime: shift.endTime || "N/A",
+          peopleApplied,
+          totalVacancy: totalVacancy >= 0 ? totalVacancy : null,
+          standbyApplied,
+          potentialTotalWage: potentialTotalWage
+            ? `$${potentialTotalWage.toFixed(2)}`
+            : "$0.00",
+          details: `${shift.payRate || 0}/hr (${
+            shift.duration || 0
+          }hr) - ${breakHours}hr (${shift.breakType || "N/A"})`,
+        };
+      });
+
+      return {
+        date: date || "N/A",
+        shifts,
+      };
+    });
+
+    // Calculate overall total vacancy
+    const totalVacancy =
+      (jobsData.shifts || []).reduce(
+        (acc, shift) => acc + (shift.vacancy || 0),
+        0
+      ) - applications.length;
+
+    // Format the response
+    const response = {
+      _id: jobsData._id,
+      jobName: jobsData.jobName || "N/A",
+      location: jobsData.location || "N/A",
+      company: jobsData.company || "N/A",
+      industry: jobsData.industry || "N/A",
+      jobDescription: jobsData.jobDescription || "N/A",
+      jobRequirements: jobsData.jobRequirements || "N/A",
+      status: jobsData.status || "N/A",
+      createdAt: jobsData.createdAt || "N/A",
+      applicants: jobsData.applicants || [],
+      dates,
+      totalVacancy: totalVacancy >= 0 ? totalVacancy : 0,
+    };
+
+    res.status(200).json(response);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -73,45 +145,70 @@ exports.getJobById = async (req, res) => {
 //apply for job
 exports.applyForJob = async (req, res) => {
   try {
-    const { jobId, shiftId } = req.body;
-    const userId = req.user.id;
+    const { jobId } = req.params;
+    const { shiftId, standby } = req.body;
+    const userId = req.user.id; // Assuming user ID is available via middleware.
 
+    // Validate job and shift
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ error: "Job not found" });
 
     const shift = job.shifts.find((s) => s._id.toString() === shiftId);
-    if (!shift || shift.vacancy <= 0) {
-      return res.status(400).json({ error: "Shift is no longer available" });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+
+    // Check vacancy or standby
+    const totalApplications = await Application.countDocuments({ job: jobId, shift: shiftId });
+    const remainingVacancy = shift.vacancy - totalApplications;
+
+    if (remainingVacancy <= 0 && !standby) {
+      return res.status(400).json({ error: "No vacancies available. Consider applying for standby." });
     }
 
-    // Decrement shift vacancy
-    shift.vacancy -= 1;
-    await job.save();
+    // Check if user has already applied
+    const existingApplication = await Application.findOne({ job: jobId, shift: shiftId, user: userId });
+    if (existingApplication) {
+      return res.status(400).json({ error: "You have already applied for this shift." });
+    }
+
+    // Calculate shift details
+    const effectiveDuration = shift.duration - (shift.breakHours || 0);
+    const potentialWage = effectiveDuration * (shift.payRate || 0);
 
     // Create application
     const application = new Application({
-      user: userId,
       job: jobId,
       shift: shiftId,
+      user: userId,
+      status: standby ? "Standby" : "Pending",
     });
-
     await application.save();
 
-    const notification = new Notification({
-      user: userId,
-      type: "Job",
-      title: "Job Application Successful",
-      message: `You have successfully applied for the job: ${job.jobName}.`,
-      icon: "/static/notificationIcon.png",
+    // Respond with success and calculated details
+    res.status(200).json({
+      success: true,
+      message: standby
+        ? "Standby application submitted successfully."
+        : "Application submitted successfully.",
+      calculatedDetails: {
+        shift: {
+          shiftId: shift._id,
+          startTime: shift.startTime,
+          endTime: shift.endTime,
+          vacancy: shift.vacancy,
+          remainingVacancy,
+          payRate: shift.payRate,
+          breakType: shift.breakType,
+          breakHours: shift.breakHours,
+          effectiveDuration,
+          potentialWage,
+        },
+        standby: standby || false,
+      },
+      bookingId: application._id,
     });
-
-    await notification.save();
-    res.status(201).json({ message: "Successfully applied for the job",
-      application,
-      notification
-     });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to apply for job" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 };
 

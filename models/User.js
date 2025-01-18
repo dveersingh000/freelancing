@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     employmentStatus: { type: String, enum: ["Student", "Singapore/PR", "Singapore/LTVP"], required: true },
     profileCompleted: { type: Boolean, default: false },
     profileId: { type: mongoose.Schema.Types.ObjectId, ref: "Profile" },
+    applications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Application' }],
     profilePicture: {
       type: String, 
       default: '/static/image.png',

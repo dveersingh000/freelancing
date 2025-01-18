@@ -1,26 +1,31 @@
 const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema({
-  worker: {
-    name: { type: String, required: true },
-    nric: { type: String, required: true },
-  },
-  employer: { type: mongoose.Schema.Types.ObjectId, ref: 'Employer', required: true },
-  job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: true },
-  shiftId: { type: String, required: true },
-  date: { type: Date, required: true },
-  timeIn: { type: String, required: true },
+  workerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, 
+  jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: true },
+  shiftId: { type: mongoose.Schema.Types.ObjectId, required: true }, 
+  employerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employer', required: true }, 
+  outletId: { type: mongoose.Schema.Types.ObjectId, ref: 'Outlet' }, 
+
+  timeIn: { type: String, required: true }, 
   timeOut: { type: String, required: true },
-  clockedIn: { type: String },
-  clockedOut: { type: String },
-  breakTime: { type: String, default: '0 Hr' },
-  breakType: { type: String, enum: ['Paid', 'Unpaid'], required: true },
-  totalWorkHours: { type: String, required: true },
-  rateType: { type: String, enum: ['Flat Rate', 'Hourly Rate', 'Weekend Rate', 'Public Holiday Rate'], required: true },
-  hourlyRate: { type: Number, required: true },
-  penaltyAmount: { type: Number, default: 0 },
-  totalAmount: { type: Number, required: true },
-  status: { type: String, enum: ['Rejected', 'Pending', 'Approved'], default: 'Pending' },
-}, { timestamps: true });
+  breakTime: { type: Number, default: 0 }, 
+  breakType: { type: String, enum: ['Paid', 'Unpaid'], default: 'Unpaid' }, 
+
+  duration: { type: Number, required: true }, 
+  rateType: { type: String, enum: ['Flat Rate', 'Hourly'], required: true }, 
+  hourlyRate: { type: Number }, 
+  flatRate: { type: Number },
+  penaltyAmount: { type: Number, default: 0 }, 
+  totalAmount: { type: Number, required: true }, 
+
+  paymentStatus: {
+    type: String,
+    enum: ['Pending', 'Processing', 'Completed', 'Rejected'],
+    default: 'Pending',
+  },
+  createdAt: { type: Date, default: Date.now }, 
+  updatedAt: { type: Date, default: Date.now }, 
+});
 
 module.exports = mongoose.model('Payment', paymentSchema);

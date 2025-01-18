@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: false },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: false },
     type: {
       type: String,
       enum: ['Job', 'Payment', 'Message', 'Alert'],

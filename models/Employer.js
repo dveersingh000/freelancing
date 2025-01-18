@@ -6,20 +6,23 @@ const employerSchema = new mongoose.Schema(
     logo: { type: String, required: false },
     contactPerson: { type: String, required: true },
     jobPosition: { type: String, required: true },
-    contactNumber: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
     email: { type: String, required: true },
     companyNumber: { type: String, required: true },
+    address: { type: String, required: true },
+    companyRegistrationNumber: { type: String, required: true },
     industry: { type: String, required: true },
     accountManager: { type: String, required: true },
+    jobsPosted: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
     outlets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Outlet' }],
-    contractStartDate: { type: Date, required: true },
-    contractEndDate: { type: Date, required: true },
-    serviceAgreement: { 
-      type: String, 
-      enum: ['In Discussion', 'Completed', 'Expired'], 
-      required: true 
+    agreementStartDate: { type: Date, required: true },
+    agreementEndDate: { type: Date, required: true },
+    status: {
+      type: String,
+      enum: ['Active', 'Inactive', 'Pending', 'Terminated'], // Employer status
+      default: 'Pending',
     },
-    active: { type: Boolean, default: true },
+    active: { type: Boolean, default: false },
     jobPostingLimit: { type: Number, default: 50 }
   },
   { timestamps: true }

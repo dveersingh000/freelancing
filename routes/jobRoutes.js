@@ -18,7 +18,7 @@ router.put('/:jobId/modify', modifyJob);
 router.post('/:jobId/duplicate', duplicateJob);
 router.put('/:jobId/deactivate', deactivateJob);
 router.delete('/:jobId', cancelJob);
-router.post('/apply',authMiddleware, applyForJob);
+router.post('/:jobId/apply',authMiddleware, applyForJob);
 router.get('/user-jobs',authMiddleware, getUserJobs);
 router.get('/ongoing', getOngoingJobs);
 router.get('/completed', getCompletedJobs);
