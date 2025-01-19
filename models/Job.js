@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const shiftSchema = new mongoose.Schema({
-  startTime: { type: String, required: true },
-  endTime: { type: String, required: true },
+  startTime: { type: Object, required: true },
+  endTime: { type: Object, required: true },
   duration: { type: Number, required: true },
   breakHours: { type: Number, default: 0 },
   breakType: { type: String, enum: ['Paid', 'Unpaid'], default: 'Unpaid' },

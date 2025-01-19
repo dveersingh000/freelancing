@@ -15,7 +15,7 @@ const ADMIN_PASSWORD = 'adminpassword';
 
 // Register a new user
 exports.registerUser = async (req, res) => {
-    const { name, email, password , phoneNumber} = req.body;
+    const { fullName, email, password , phoneNumber, employmentStatus} = req.body;
     try {
         const ifUserExists = await User.findOne({ email });
         if (ifUserExists) {
@@ -23,10 +23,11 @@ exports.registerUser = async (req, res) => {
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new User({
-            name,
+            fullName,
             email,
             password: hashedPassword,
-            phoneNumber
+            phoneNumber,
+            employmentStatus
         });
         await user.save();
         res.status(201).json({ message: "User created successfully" });
