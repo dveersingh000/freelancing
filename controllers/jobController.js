@@ -38,7 +38,7 @@ exports.getJobs = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     const jobs = await Job.find()
-      .select("jobName location popularity shifts status image dates potentialWages duration payRate createdAt")
+      .select("jobName location popularity company requirements shifts status image dates potentialWages duration payRate createdAt")
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
@@ -126,12 +126,13 @@ exports.getJobById = async (req, res) => {
       location: jobsData.location || "N/A",
       company: jobsData.company || "N/A",
       industry: jobsData.industry || "N/A",
-      jobDescription: jobsData.jobDescription || "N/A",
-      jobRequirements: jobsData.jobRequirements || "N/A",
+      jobScopeDescription: jobsData.requirements.jobScopeDescription || "N/A",
+      jobRequirements: jobsData.requirements.jobRequirements || "N/A",
       status: jobsData.status || "N/A",
       createdAt: jobsData.createdAt || "N/A",
       applicants: jobsData.applicants || [],
-      dates,
+      dates: jobsData.dates,
+      shifts: jobsData.shifts,
       totalVacancy: totalVacancy >= 0 ? totalVacancy : 0,
     };
 
@@ -250,8 +251,8 @@ exports.getJobsByDate = async (req, res) => {
 // Update job details
 exports.updateJob = async (req, res) => {
   try {
-    const { jobId } = req.params;
-    const updatedJob = await Job.findByIdAndUpdate(jobId, req.body, { new: true });
+    const { id } = req.params;
+    const updatedJob = await Job.findByIdAndUpdate(id, req.body, { new: true });
     res.status(200).json(updatedJob);
   } catch (err) {
     res.status(500).json({ error: err.message });
