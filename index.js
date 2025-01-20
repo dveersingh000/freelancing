@@ -33,7 +33,7 @@ const cancellationRoutes = require('./routes/cancellationRoutes');
 
 // Middleware
 app.use(cors({
-  origin: "http://localhost:5173",  // Allow frontend URL
+  origin: '*',  
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,  // Allow cookies with requests
 }));
