@@ -33,7 +33,7 @@ const cancellationRoutes = require('./routes/cancellationRoutes');
 
 // Middleware
 app.use(cors({
-  origin: '*',  
+  origin: 'https://admin-panel-37l9.vercel.app/',  
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,  // Allow cookies with requests
 }));
